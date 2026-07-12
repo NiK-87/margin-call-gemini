@@ -1,0 +1,1 @@
+{"id":"ca3eaf01-1ff0-4557-a07d-26e097005f32", "recipient":"aafc1015-dd13-47de-9fd9-5574a6795b35", "sender":"aafc1015-dd13-47de-9fd9-5574a6795b35/task-76", "priority":"MESSAGE_PRIORITY_HIGH", "timestamp":"2026-06-21T22:03:21.745378500Z", "renderDetails":{"messageTitle":"Progress wait timer: Timer has expired"}, "content":"Check if the UI_Architect subagent has made progress"}
