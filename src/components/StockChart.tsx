@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import type { Card } from '../types/game';
 
 
@@ -210,18 +211,27 @@ export const StockChart: React.FC<StockChartProps> = ({
 
           {/* Under fill gradient */}
           {gradientPath && (
-            <path d={gradientPath} fill={`url(#${gradientId})`} />
+            <motion.path 
+              d={gradientPath} 
+              fill={`url(#${gradientId})`} 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.8 }}
+            />
           )}
 
           {/* Main Price Line */}
           {linePath && (
-            <path
+            <motion.path
               d={linePath}
               fill="none"
               stroke={themeColor}
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
             />
           )}
 

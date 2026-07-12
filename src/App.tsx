@@ -1,4 +1,5 @@
 import { useReducer, useState } from 'react';
+import { motion } from 'framer-motion';
 import type { Card } from './types/game';
 import { gameReducer, initialState } from './game/reducer';
 import type { WeeklyCardAction } from './game/actions';
@@ -38,8 +39,14 @@ function App() {
   const retireBroker = () => dispatch({ type: 'RETIRE_BROKER' });
   const resetGame = () => dispatch({ type: 'RESET_GAME' });
 
+  const shouldShake = state.volatility > 0.30 || state.screen === 'SQUEEZE_WAR';
+
   return (
-    <div className="retro-terminal">
+    <motion.div 
+      className="retro-terminal"
+      animate={shouldShake ? { x: [-2, 2, -1, 1, 0], y: [-1, 1, -1, 1, 0] } : {}}
+      transition={shouldShake ? { repeat: Infinity, duration: 0.15, ease: 'linear' } : {}}
+    >
       {/* Visual CRT Scanline Overlays */}
       <div className="scanline-overlay" />
 
@@ -97,11 +104,15 @@ function App() {
         {state.screen === 'RETIRED' && <RetiredScreen state={state} onResetGame={resetGame} />}
       </main>
 
-      {/* DEBUG TERMINAL SETTINGS OVERLAY PANEL (MODAL) */}
+      {/* Debug Overlay Panel */}
       {isSettingsOpen && (
-        <DebugPanel state={state} dispatch={dispatch} onClose={() => setIsSettingsOpen(false)} />
+        <DebugPanel
+          state={state}
+          onClose={() => setIsSettingsOpen(false)}
+          dispatch={dispatch}
+        />
       )}
-    </div>
+    </motion.div>
   );
 }
 

@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import useSound from 'use-sound';
 import type { GameState, Card } from '../types/game';
+import hoverSfx from '../assets/audio/hover.mp3';
+import discardSfx from '../assets/audio/discard.mp3';
 import { StockChart } from './StockChart';
 import { 
   TrendingUp, 
@@ -35,6 +39,10 @@ export const TradingDesk: React.FC<TradingDeskProps> = ({
   const [discardingIds, setDiscardingIds] = useState<Set<string>>(new Set());
   const [isDragOverZone, setIsDragOverZone] = useState<boolean>(false);
   const logEndRef = useRef<HTMLDivElement>(null);
+
+  // Audio Hooks
+  const [playHover] = useSound(hoverSfx, { volume: 0.25 });
+  const [playDiscard] = useSound(discardSfx, { volume: 0.6 });
 
   // Auto-scroll the terminal logs
   useEffect(() => {
@@ -79,6 +87,7 @@ export const TradingDesk: React.FC<TradingDeskProps> = ({
 
   const handleDiscardCard = (cardId: string) => {
     if (discardingIds.has(cardId)) return;
+    playDiscard();
     setDiscardingIds((prev) => {
       const next = new Set(prev);
       next.add(cardId);
@@ -136,17 +145,23 @@ export const TradingDesk: React.FC<TradingDeskProps> = ({
         />
 
         {/* DRAG DISCARD ZONE (NEW) */}
-        <div 
+        <motion.div 
           className={`glass-panel discard-drag-zone ${isDragOverZone ? 'dragover' : ''}`}
+          animate={{
+            scale: isDragOverZone ? 1.02 : 1,
+            boxShadow: isDragOverZone ? '0 0 20px rgba(0, 255, 102, 0.3)' : 'none',
+            borderColor: isDragOverZone ? 'var(--neon-green)' : 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: isDragOverZone ? 'rgba(0, 255, 102, 0.05)' : 'rgba(0, 0, 0, 0.15)'
+          }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           onDragOver={handleDragOverZone}
           onDragLeave={handleDragLeaveZone}
           onDrop={handleDropZone}
           style={{
-            border: isDragOverZone ? '2px dashed var(--neon-green)' : '2px dashed rgba(255, 255, 255, 0.1)',
+            border: '2px dashed',
             borderRadius: '6px',
             padding: '16px',
             textAlign: 'center',
-            background: isDragOverZone ? 'rgba(0, 255, 102, 0.05)' : 'rgba(0, 0, 0, 0.15)',
             color: isDragOverZone ? 'var(--neon-green)' : 'var(--text-secondary)',
             cursor: 'pointer',
             transition: 'all 0.2s ease-in-out',
@@ -166,7 +181,7 @@ export const TradingDesk: React.FC<TradingDeskProps> = ({
           <span style={{ fontSize: '8px', color: 'var(--text-muted)', fontWeight: 'normal' }}>
             CALLS SHIFT PRICE UP | PUTS SHIFT PRICE DOWN
           </span>
-        </div>
+        </motion.div>
 
         {/* Hand of Cards */}
         <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -178,28 +193,44 @@ export const TradingDesk: React.FC<TradingDeskProps> = ({
           </div>
 
           <div className="hand-container">
-            {state.hand.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '40px', color: 'var(--text-muted)' }}>
-                <Layers size={36} />
-                <span>NO OPTIONS OUTSTANDING. REDRAW OR CONCLUDE TRADING DAY.</span>
-              </div>
-            ) : (
-              state.hand.map((card) => {
-                const isDiscarding = discardingIds.has(card.id);
-                const isCall = card.type === 'CALL';
+            <AnimatePresence mode="popLayout">
+              {state.hand.length === 0 ? (
+                <motion.div 
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', padding: '40px', color: 'var(--text-muted)', width: '100%' }}
+                >
+                  <Layers size={36} />
+                  <span>NO OPTIONS OUTSTANDING. REDRAW OR CONCLUDE TRADING DAY.</span>
+                </motion.div>
+              ) : (
+                state.hand.map((card, index) => {
+                  const isDiscarding = discardingIds.has(card.id);
+                  const isCall = card.type === 'CALL';
                 const potentialYield = getCardYield(card, state.assetPrice);
                 const isITM = isCall ? (state.assetPrice > card.strikePrice) : (state.assetPrice < card.strikePrice);
                 
-                let cardStateClass = '';
-                if (isDiscarding) cardStateClass = 'card-discard-animate';
-                else cardStateClass = 'card-draw-animate';
-
                 return (
-                  <div
+                  <motion.div
+                    layout
+                    initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                    animate={{ 
+                      opacity: isDiscarding ? 0 : 1, 
+                      y: isDiscarding ? -50 : 0, 
+                      scale: isDiscarding ? 0.8 : 1 
+                    }}
+                    exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+                    whileHover={!isDiscarding ? { y: -8, boxShadow: '0 8px 25px rgba(0,255,102,0.15)' } : {}}
+                    transition={{ 
+                      type: 'spring', 
+                      stiffness: 400, 
+                      damping: 25,
+                      delay: isDiscarding ? 0 : index * 0.05
+                    }}
                     key={card.id}
-                    className={`card-option type-${card.type.toLowerCase()} tier-${card.tier.toLowerCase()} ${cardStateClass}`}
+                    className={`card-option type-${card.type.toLowerCase()} tier-${card.tier.toLowerCase()}`}
                     draggable={true}
-                    onDragStart={(e) => handleDragStart(e, card.id)}
+                    onDragStart={(e: any) => handleDragStart(e, card.id)}
+                    onMouseEnter={() => !isDiscarding && playHover()}
                     style={{ cursor: 'grab' }}
                   >
                     {/* Header: Tier and Type Icon */}
@@ -294,10 +325,11 @@ export const TradingDesk: React.FC<TradingDeskProps> = ({
                         DISCARD CONTRACT
                       </button>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })
             )}
+            </AnimatePresence>
           </div>
         </div>
 

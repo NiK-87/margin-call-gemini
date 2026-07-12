@@ -1,6 +1,9 @@
 import type { GameState } from '../types/game';
 import type { WeeklyCardAction } from '../game/actions';
 import { getWeeklySettleMetrics } from '../game/selectors';
+import useSound from 'use-sound';
+import cashSfx from '../assets/audio/cash.mp3';
+import discardSfx from '../assets/audio/discard.mp3';
 
 interface WeeklySettleScreenProps {
   state: GameState;
@@ -11,6 +14,8 @@ interface WeeklySettleScreenProps {
 
 export function WeeklySettleScreen({ state, onSetWeeklyCardAction, onSettleWeeklyAudit, onInitiateShortSqueeze }: WeeklySettleScreenProps) {
   const { weeklyExerciseYield, projectedTotalLedger } = getWeeklySettleMetrics(state);
+  const [playCash] = useSound(cashSfx, { volume: 0.5 });
+  const [playDiscard] = useSound(discardSfx, { volume: 0.4 });
 
   return (
     <div className="title-screen crt-flicker" style={{ minHeight: '82vh', padding: '10px' }}>
@@ -63,21 +68,21 @@ export function WeeklySettleScreen({ state, onSetWeeklyCardAction, onSettleWeekl
                     <button
                       className={`card-btn ${isExercised ? 'warning' : ''}`}
                       style={{ fontSize: '8px', padding: '3px 6px', background: isExercised ? 'var(--neon-green)' : 'rgba(0,0,0,0.4)', color: isExercised ? '#000' : 'var(--text-primary)' }}
-                      onClick={() => onSetWeeklyCardAction(card.id, 'EXERCISE')}
+                      onClick={() => { playCash(); onSetWeeklyCardAction(card.id, 'EXERCISE'); }}
                     >
                       EXERCISE
                     </button>
                     <button
                       className={`card-btn ${isRolled ? 'warning' : ''}`}
                       style={{ fontSize: '8px', padding: '3px 6px', background: isRolled ? 'var(--warning-amber)' : 'rgba(0,0,0,0.4)', color: isRolled ? '#000' : 'var(--text-primary)' }}
-                      onClick={() => onSetWeeklyCardAction(card.id, 'ROLLOVER')}
+                      onClick={() => { playCash(); onSetWeeklyCardAction(card.id, 'ROLLOVER'); }}
                     >
                       ROLL ($15)
                     </button>
                     <button
                       className="card-btn"
                       style={{ fontSize: '8px', padding: '3px 6px', background: isAbandoned ? 'var(--crash-red)' : 'rgba(0,0,0,0.4)', color: isAbandoned ? '#000' : 'var(--text-primary)' }}
-                      onClick={() => onSetWeeklyCardAction(card.id, 'ABANDON')}
+                      onClick={() => { playDiscard(); onSetWeeklyCardAction(card.id, 'ABANDON'); }}
                     >
                       ABANDON
                     </button>
